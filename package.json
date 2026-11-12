@@ -1,0 +1,14 @@
+
+{
+  "name": "menya-driving-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MENYA DRIVING AI - Rwanda Driving Rules Assistant",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.15"
+  }
+}
