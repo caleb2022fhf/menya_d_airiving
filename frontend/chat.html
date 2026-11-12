@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MENYA DRIVING AI - AI Tutor</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chat.css">
+</head>
+<body>
+
+    <header class="header">
+        <a href="index.html" class="logo">
+            <span>MENYA DRIVING AI</span>
+        </a>
+
+        <nav class="navigation">
+            <a href="index.html">Home</a>
+            <a href="chat.html">AI Tutor</a>
+            <a href="login.html">Login</a>
+        </nav>
+    </header>
+
+    <main class="chat-page">
+        <section class="chat-heading">
+            <h1>Ask MENYA <span>DRIVING AI</span></h1>
+            <p>Your intelligent tutor for Rwanda driving rules and traffic laws.</p>
+        </section>
+
+        <section class="chat-container">
+
+            <div class="chat-toolbar">
+                <div>
+                    <strong>MENYA AI Assistant</strong>
+                    <p><span class="online-dot"></span> Ready to help</p>
+                </div>
+
+                <select id="language">
+                    <option value="rw">Kinyarwanda</option>
+                    <option value="en">English</option>
+                    <option value="fr">French</option>
+                </select>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai-message">
+                    <div class="message-avatar">M</div>
+                    <div class="message-bubble">
+                        Muraho! Ndi MENYA DRIVING AI. Nshobora kugufasha
+                        kumenya amategeko y'umuhanda mu Rwanda.
+                        Mbaza ikibazo icyo ari cyo cyose.
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <textarea
+                    id="question"
+                    placeholder="Andika ikibazo cyawe hano..."
+                    rows="2"
+                ></textarea>
+
+                <button id="sendButton" type="button">Send</button>
+            </div>
+
+            <div class="chat-note">
+                MENYA DRIVING AI — Rwanda Driving Education
+            </div>
+
+        </section>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script src="js/chat.js"></script>
+
+</body>
+</html>
