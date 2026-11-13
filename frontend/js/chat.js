@@ -33,7 +33,7 @@ function addMessage(message, sender) {
     messageElement.appendChild(avatar);
     messageElement.appendChild(bubble);
 
-    // Added Text-to-Speech button for MENYA messages
+    // Text-to-Speech button for MENYA messages
     if (sender === "ai") {
         const speakButton = document.createElement("button");
 
@@ -131,16 +131,20 @@ questionInput.addEventListener("keydown", (event) => {
     }
 });
 
-
+// MENYA TEXT-TO-SPEECH
 function menyaSpeak(text) {
     if (!("speechSynthesis" in window)) {
         alert("Your browser does not support Text-to-Speech.");
         return;
     }
 
+    if (!text || !text.trim()) {
+        return;
+    }
+
     window.speechSynthesis.cancel();
 
-    const speech = new SpeechSynthesisUtterance(text);
+    const speech = new SpeechSynthesisUtterance(text.trim());
 
     const language = languageSelect.value;
 
@@ -150,9 +154,31 @@ function menyaSpeak(text) {
         fr: "fr-FR"
     };
 
+    const voices = window.speechSynthesis.getVoices();
+
+    let selectedVoice = null;
+
+    if (language === "rw") {
+        selectedVoice = voices.find(voice =>
+            voice.lang.toLowerCase().startsWith("rw")
+        );
+    } else if (language === "en") {
+        selectedVoice = voices.find(voice =>
+            voice.lang.toLowerCase().startsWith("en")
+        );
+    } else if (language === "fr") {
+        selectedVoice = voices.find(voice =>
+            voice.lang.toLowerCase().startsWith("fr")
+        );
+    }
+
     speech.lang = languageCodes[language] || "rw-RW";
-    speech.rate = 0.9;
+    speech.rate = 0.85;
     speech.pitch = 1;
+
+    if (selectedVoice) {
+        speech.voice = selectedVoice;
+    }
 
     window.speechSynthesis.speak(speech);
 }
