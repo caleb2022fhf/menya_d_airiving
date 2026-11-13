@@ -33,6 +33,25 @@ function addMessage(message, sender) {
     messageElement.appendChild(avatar);
     messageElement.appendChild(bubble);
 
+    // Added Text-to-Speech button for MENYA messages
+    if (sender === "ai") {
+        const speakButton = document.createElement("button");
+
+        speakButton.type = "button";
+        speakButton.textContent = "🔊 Listen";
+        speakButton.className = "speak-button";
+        speakButton.style.marginTop = "8px";
+        speakButton.style.padding = "7px 12px";
+        speakButton.style.borderRadius = "8px";
+        speakButton.style.cursor = "pointer";
+
+        speakButton.addEventListener("click", () => {
+            menyaSpeak(bubble.textContent);
+        });
+
+        messageElement.appendChild(speakButton);
+    }
+
     chatMessages.appendChild(messageElement);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
