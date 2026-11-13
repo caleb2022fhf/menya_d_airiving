@@ -111,3 +111,29 @@ questionInput.addEventListener("keydown", (event) => {
         sendQuestion();
     }
 });
+
+
+function menyaSpeak(text) {
+    if (!("speechSynthesis" in window)) {
+        alert("Your browser does not support Text-to-Speech.");
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const speech = new SpeechSynthesisUtterance(text);
+
+    const language = languageSelect.value;
+
+    const languageCodes = {
+        rw: "rw-RW",
+        en: "en-US",
+        fr: "fr-FR"
+    };
+
+    speech.lang = languageCodes[language] || "rw-RW";
+    speech.rate = 0.9;
+    speech.pitch = 1;
+
+    window.speechSynthesis.speak(speech);
+}
