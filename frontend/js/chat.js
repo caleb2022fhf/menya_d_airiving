@@ -132,13 +132,53 @@ questionInput.addEventListener("keydown", (event) => {
 });
 
 // MENYA TEXT-TO-SPEECH
-function menyaSpeak(text) {
-    if (!("speechSynthesis" in window)) {
-        alert("Your browser does not support Text-to-Speech.");
+async function menyaSpeak(text) {
+    if (!text || !text.trim()) {
         return;
     }
 
-    if (!text || !text.trim()) {
+    const language = languageSelect.value;
+
+    if (language === "rw") {
+        try {
+            if (window.menyaAudioPlayer) {
+                window.menyaAudioPlayer.pause();
+                window.menyaAudioPlayer.currentTime = 0;
+            }
+
+            const response = await fetch("/api/tts", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    text: text.trim(),
+                    language: "rw"
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.audioUrl) {
+                throw new Error(
+                    data.message || "Kinyarwanda voice generation failed."
+                );
+            }
+
+            window.menyaAudioPlayer = new Audio(data.audioUrl);
+
+            await window.menyaAudioPlayer.play();
+
+        } catch (error) {
+            console.error("MENYA KINYARWANDA VOICE ERROR:", error);
+            alert("MENYA ntiyabashije gusoma igisubizo. Ongera ugerageze.");
+        }
+
+        return;
+    }
+
+    if (!("speechSynthesis" in window)) {
+        alert("Your browser does not support Text-to-Speech.");
         return;
     }
 
@@ -146,10 +186,7 @@ function menyaSpeak(text) {
 
     const speech = new SpeechSynthesisUtterance(text.trim());
 
-    const language = languageSelect.value;
-
     const languageCodes = {
-        rw: "rw-RW",
         en: "en-US",
         fr: "fr-FR"
     };
@@ -158,11 +195,7 @@ function menyaSpeak(text) {
 
     let selectedVoice = null;
 
-    if (language === "rw") {
-        selectedVoice = voices.find(voice =>
-            voice.lang.toLowerCase().startsWith("rw")
-        );
-    } else if (language === "en") {
+    if (language === "en") {
         selectedVoice = voices.find(voice =>
             voice.lang.toLowerCase().startsWith("en")
         );
@@ -172,7 +205,7 @@ function menyaSpeak(text) {
         );
     }
 
-    speech.lang = languageCodes[language] || "rw-RW";
+    speech.lang = languageCodes[language] || "en-US";
     speech.rate = 0.85;
     speech.pitch = 1;
 
