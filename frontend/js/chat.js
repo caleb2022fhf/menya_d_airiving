@@ -6,9 +6,17 @@ const languageSelect = document.getElementById("language");
 
 languageSelect.value = MenyaApp.getLanguage();
 
-languageSelect.addEventListener("change", () => {
-    MenyaApp.setLanguage(languageSelect.value);
-});
+let conversationHistory = [];
+
+function getWelcomeMessage(language) {
+    const messages = {
+        rw: "Muraho neza! 👋 Nishimiye kukubona muri MENYA-DRIVING-AI. Nitwa MENYA. Ndi umufasha wawe mu kwiga amategeko y'umuhanda mu Rwanda. Wiriwe ute uyu munsi? Ni iki twaganiraho?",
+        en: "Hello! 👋 Welcome to MENYA-DRIVING-AI. My name is MENYA. I am your assistant for learning Rwanda's driving rules. How are you today? What would you like to talk about?",
+        fr: "Bonjour ! 👋 Bienvenue sur MENYA-DRIVING-AI. Je m'appelle MENYA. Je suis votre assistant pour apprendre le code de la route au Rwanda. Comment allez-vous aujourd'hui ? De quoi aimeriez-vous parler ?"
+    };
+
+    return messages[language] || messages.rw;
+}
 
 function addMessage(message, sender) {
     const messageElement = document.createElement("div");
@@ -31,6 +39,12 @@ function addMessage(message, sender) {
     return bubble;
 }
 
+addMessage(getWelcomeMessage(languageSelect.value), "ai");
+
+languageSelect.addEventListener("change", () => {
+    MenyaApp.setLanguage(languageSelect.value);
+});
+
 async function sendQuestion() {
     const question = questionInput.value.trim();
 
@@ -39,6 +53,13 @@ async function sendQuestion() {
     }
 
     addMessage(question, "user");
+
+    const previousHistory = [...conversationHistory];
+
+    conversationHistory.push({
+        role: "user",
+        text: question
+    });
 
     questionInput.value = "";
     sendButton.disabled = true;
@@ -51,7 +72,8 @@ async function sendQuestion() {
             method: "POST",
             body: JSON.stringify({
                 question: question,
-                language: languageSelect.value
+                language: languageSelect.value,
+                history: previousHistory
             })
         });
 
@@ -61,10 +83,19 @@ async function sendQuestion() {
 
         loadingMessage.textContent = response.answer;
 
+        conversationHistory.push({
+            role: "model",
+            text: response.answer
+        });
+
     } catch (error) {
+        conversationHistory.pop();
+
         loadingMessage.textContent =
-            "Sorry, I could not get an answer. Please try again later.";
+            "Ntabwo nshoboye gusubiza ubu. Ongera ugerageze.";
+
         console.error(error);
+
     } finally {
         sendButton.disabled = false;
         sendButton.textContent = "Send";
