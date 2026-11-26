@@ -1,0 +1,259 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080d18">
+    <title>Admin Dashboard | MENYA DRIVING AI</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            color: #f5f7ff;
+            background: #080d18;
+        }
+
+        header {
+            padding: 20px 7%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            background: #111a2b;
+            border-bottom: 1px solid rgba(0,212,255,.2);
+        }
+
+        header h2 {
+            color: #00d4ff;
+            font-size: 21px;
+        }
+
+        header span {
+            color: #9ba9bd;
+            font-size: 13px;
+        }
+
+        main {
+            width: 90%;
+            max-width: 1100px;
+            margin: 40px auto;
+        }
+
+        .welcome {
+            margin-bottom: 30px;
+        }
+
+        .welcome h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .welcome p {
+            color: #9ba9bd;
+            line-height: 1.6;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            padding: 25px;
+            border: 1px solid rgba(0,212,255,.2);
+            border-radius: 14px;
+            background: #111a2b;
+        }
+
+        .card .icon {
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            color: #00d4ff;
+        }
+
+        .card p {
+            color: #9ba9bd;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .section {
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 14px;
+            background: #111a2b;
+        }
+
+        .section h2 {
+            margin-bottom: 12px;
+        }
+
+        .section p {
+            color: #9ba9bd;
+            line-height: 1.7;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            color: #00e6a0;
+            background: rgba(0,230,160,.1);
+            font-size: 12px;
+        }
+
+        #loading {
+            text-align: center;
+            margin-top: 100px;
+            color: #00d4ff;
+        }
+
+        #dashboard {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                padding: 18px 5%;
+            }
+
+            header h2 {
+                font-size: 17px;
+            }
+
+            main {
+                margin-top: 30px;
+            }
+
+            .welcome h1 {
+                font-size: 23px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading">Checking administrator access...</div>
+
+    <div id="dashboard">
+
+        <header>
+            <h2>MENYA DRIVING AI</h2>
+            <span>ADMIN PANEL</span>
+        </header>
+
+        <main>
+
+            <section class="welcome">
+                <h1>Welcome, Administrator 👋</h1>
+                <p>
+                    Manage driving examination documents, questions,
+                    examinations and student results.
+                </p>
+            </section>
+
+            <section class="cards">
+
+                <div class="card">
+                    <div class="icon">📄</div>
+                    <h3>PDF Documents</h3>
+                    <p>
+                        Upload driving examination PDFs and manage
+                        your question documents.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="icon">❓</div>
+                    <h3>Questions</h3>
+                    <p>
+                        Review questions extracted from your PDF
+                        documents and approve them.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="icon">📝</div>
+                    <h3>Examinations</h3>
+                    <p>
+                        Create and publish examinations for students.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="icon">📊</div>
+                    <h3>Student Results</h3>
+                    <p>
+                        View examination scores and student performance.
+                    </p>
+                </div>
+
+            </section>
+
+            <section class="section">
+                <h2>PDF Question Bank</h2>
+                <p>
+                    The PDF upload and question extraction tools
+                    will be connected here in the next step.
+                </p>
+                <span class="status">Admin session verified</span>
+            </section>
+
+            <section class="section">
+                <h2>Examination Settings</h2>
+                <p>Questions per examination: 20</p>
+                <p>Total examination time: 20 minutes</p>
+                <p>Time allowed per question: 60 seconds</p>
+                <p>Students cannot return to previous questions.</p>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        async function checkAdminSession() {
+            try {
+                const response = await fetch("/api/admin/session", {
+                    method: "GET",
+                    credentials: "same-origin",
+                    cache: "no-store"
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.authenticated) {
+                    window.location.replace("/frontend/admin/index.html");
+                    return;
+                }
+
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("dashboard").style.display = "block";
+
+            } catch (error) {
+                document.getElementById("loading").textContent =
+                    "Unable to verify access. Please try again.";
+            }
+        }
+
+        checkAdminSession();
+    </script>
+
+</body>
+</html>
