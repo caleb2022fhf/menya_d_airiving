@@ -1,6 +1,6 @@
 
 import { createClient } from "@libsql/client";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 function getDatabase() {
     return createClient({
@@ -46,9 +46,8 @@ async function uploadToGemini(pdfBuffer, filename) {
         throw new Error("GEMINI_API_KEY is not configured.");
     }
 
-    // Start Gemini file upload
     const startResponse = await fetch(
-        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(apiKey)}`,
         {
             method: "POST",
             headers: {
@@ -82,7 +81,6 @@ async function uploadToGemini(pdfBuffer, filename) {
         throw new Error("Gemini did not return an upload URL.");
     }
 
-    // Upload PDF bytes
     const uploadResponse = await fetch(uploadUrl, {
         method: "POST",
         headers: {
@@ -161,7 +159,7 @@ Return ONLY valid JSON in this exact structure:
 `;
 
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`,
         {
             method: "POST",
             headers: {
@@ -169,6 +167,7 @@ Return ONLY valid JSON in this exact structure:
             },
             body: JSON.stringify({
                 contents: [{
+                    role: "user",
                     parts: [
                         {
                             file_data: {
@@ -256,7 +255,6 @@ export default async function handler(req, res) {
 
         const db = getDatabase();
 
-        // Find uploaded document
         const documentResult = await db.execute({
             sql: `SELECT id, filename, blob_url
                   FROM exam_documents
@@ -279,7 +277,6 @@ export default async function handler(req, res) {
             args: [document.id]
         });
 
-        // Download private PDF from Vercel Blob
         const pdfResponse = await fetch(document.blob_url, {
             headers: {
                 Authorization:
@@ -301,13 +298,11 @@ export default async function handler(req, res) {
             throw new Error("PDF exceeds the 20 MB limit.");
         }
 
-        // Upload PDF to Gemini
         const geminiFile = await uploadToGemini(
             pdfBuffer,
             document.filename
         );
 
-        // Extract questions
         const questions = await extractQuestions(geminiFile);
 
         let savedCount = 0;
@@ -354,7 +349,7 @@ export default async function handler(req, res) {
                       )
                       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
                 args: [
-                    crypto.randomUUID(),
+                    randomUUID(),
                     document.id,
                     item.question.trim(),
                     JSON.stringify(options),
