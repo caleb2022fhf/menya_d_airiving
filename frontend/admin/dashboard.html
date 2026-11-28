@@ -128,6 +128,45 @@
             display: none;
         }
 
+        /* PDF upload styles - new */
+        .upload-input {
+            display: block;
+            width: 100%;
+            margin: 18px 0;
+            padding: 14px;
+            color: #f5f7ff;
+            background: #080f1d;
+            border: 1px solid #34445c;
+            border-radius: 9px;
+        }
+
+        .upload-button {
+            padding: 13px 22px;
+            border: none;
+            border-radius: 9px;
+            color: #06101b;
+            background: linear-gradient(120deg, #00d4ff, #67a9ff);
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .upload-button:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        #uploadMessage {
+            margin-top: 15px;
+            overflow-wrap: anywhere;
+        }
+
+        #uploadProgress {
+            display: none;
+            width: 100%;
+            margin-top: 15px;
+            accent-color: #00d4ff;
+        }
+
         @media (max-width: 600px) {
             header {
                 padding: 18px 5%;
@@ -207,11 +246,47 @@
 
             </section>
 
+            <!-- PDF UPLOAD SECTION - NEW -->
+            <section class="section">
+                <h2>📤 Upload Driving Examination PDF</h2>
+
+                <p>
+                    Select a PDF containing driving examination
+                    questions and answers.
+                </p>
+
+                <form id="uploadForm">
+                    <input
+                        type="file"
+                        id="pdfFile"
+                        class="upload-input"
+                        accept=".pdf,application/pdf"
+                        required
+                    >
+
+                    <button
+                        type="submit"
+                        id="uploadButton"
+                        class="upload-button"
+                    >
+                        Upload PDF
+                    </button>
+
+                    <progress
+                        id="uploadProgress"
+                        value="0"
+                        max="100"
+                    ></progress>
+
+                    <p id="uploadMessage" role="status"></p>
+                </form>
+            </section>
+
             <section class="section">
                 <h2>PDF Question Bank</h2>
                 <p>
-                    The PDF upload and question extraction tools
-                    will be connected here in the next step.
+                    Uploaded documents will be processed so that
+                    questions can be extracted and reviewed.
                 </p>
                 <span class="status">Admin session verified</span>
             </section>
@@ -227,7 +302,19 @@
         </main>
     </div>
 
-    <script>
+    <script type="module">
+        import { upload } from "https://esm.sh/@vercel/blob/client@2.9.0";
+
+        const loading = document.getElementById("loading");
+        const dashboard = document.getElementById("dashboard");
+        const form = document.getElementById("uploadForm");
+        const fileInput = document.getElementById("pdfFile");
+        const button = document.getElementById("uploadButton");
+        const message = document.getElementById("uploadMessage");
+        const progress = document.getElementById("uploadProgress");
+
+        let authenticated = false;
+
         async function checkAdminSession() {
             try {
                 const response = await fetch("/api/admin/session", {
@@ -243,14 +330,82 @@
                     return;
                 }
 
-                document.getElementById("loading").style.display = "none";
-                document.getElementById("dashboard").style.display = "block";
+                authenticated = true;
+                loading.style.display = "none";
+                dashboard.style.display = "block";
 
             } catch (error) {
-                document.getElementById("loading").textContent =
+                loading.textContent =
                     "Unable to verify access. Please try again.";
             }
         }
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            if (!authenticated) return;
+
+            const file = fileInput.files[0];
+
+            if (!file) {
+                message.textContent = "Please select a PDF.";
+                return;
+            }
+
+            if (
+                file.type !== "application/pdf" &&
+                !file.name.toLowerCase().endsWith(".pdf")
+            ) {
+                message.textContent = "Only PDF files are allowed.";
+                return;
+            }
+
+            if (file.size > 20 * 1024 * 1024) {
+                message.textContent = "PDF must not exceed 20 MB.";
+                return;
+            }
+
+            button.disabled = true;
+            progress.style.display = "block";
+            progress.value = 0;
+            message.textContent = "Preparing secure upload...";
+
+            try {
+                const safeName = file.name.replace(
+                    /[^a-zA-Z0-9._-]/g,
+                    "_"
+                );
+
+                const pathname =
+                    `exam-documents/${Date.now()}-${safeName}`;
+
+                const blob = await upload(pathname, file, {
+                    access: "private",
+                    handleUploadUrl: "/api/admin/upload",
+
+                    onUploadProgress({ percentage }) {
+                        progress.value = percentage;
+                        message.textContent =
+                            `Uploading PDF: ${Math.round(percentage)}%`;
+                    }
+                });
+
+                message.textContent =
+                    "PDF uploaded successfully: " + file.name;
+
+                fileInput.value = "";
+                progress.value = 100;
+
+            } catch (error) {
+                console.error("PDF upload error:", error);
+
+                message.textContent =
+                    "Upload failed: " +
+                    (error.message || "Please try again.");
+            } finally {
+                button.disabled = false;
+            }
+        });
 
         checkAdminSession();
     </script>
