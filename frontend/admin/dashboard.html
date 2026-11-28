@@ -128,7 +128,8 @@
             display: none;
         }
 
-        /* PDF upload styles - new */
+        /* PDF upload styles */
+
         .upload-input {
             display: block;
             width: 100%;
@@ -246,7 +247,8 @@
 
             </section>
 
-            <!-- PDF UPLOAD SECTION - NEW -->
+            <!-- PDF UPLOAD SECTION -->
+
             <section class="section">
                 <h2>📤 Upload Driving Examination PDF</h2>
 
@@ -256,6 +258,7 @@
                 </p>
 
                 <form id="uploadForm">
+
                     <input
                         type="file"
                         id="pdfFile"
@@ -279,20 +282,24 @@
                     ></progress>
 
                     <p id="uploadMessage" role="status"></p>
+
                 </form>
             </section>
 
             <section class="section">
                 <h2>PDF Question Bank</h2>
+
                 <p>
                     Uploaded documents will be processed so that
                     questions can be extracted and reviewed.
                 </p>
+
                 <span class="status">Admin session verified</span>
             </section>
 
             <section class="section">
                 <h2>Examination Settings</h2>
+
                 <p>Questions per examination: 20</p>
                 <p>Total examination time: 20 minutes</p>
                 <p>Time allowed per question: 60 seconds</p>
@@ -303,10 +310,10 @@
     </div>
 
     <script type="module">
-        import { upload } from "https://esm.sh/@vercel/blob/client@2.9.0";
 
         const loading = document.getElementById("loading");
         const dashboard = document.getElementById("dashboard");
+
         const form = document.getElementById("uploadForm");
         const fileInput = document.getElementById("pdfFile");
         const button = document.getElementById("uploadButton");
@@ -315,8 +322,12 @@
 
         let authenticated = false;
 
+        // CHECK ADMIN SESSION
+
         async function checkAdminSession() {
+
             try {
+
                 const response = await fetch("/api/admin/session", {
                     method: "GET",
                     credentials: "same-origin",
@@ -326,29 +337,50 @@
                 const data = await response.json();
 
                 if (!response.ok || !data.authenticated) {
-                    window.location.replace("/frontend/admin/index.html");
+
+                    window.location.replace(
+                        "/frontend/admin/index.html"
+                    );
+
                     return;
                 }
 
                 authenticated = true;
+
                 loading.style.display = "none";
                 dashboard.style.display = "block";
 
             } catch (error) {
+
+                console.error("Admin session error:", error);
+
                 loading.textContent =
-                    "Unable to verify access. Please try again.";
+                    "Unable to verify administrator access. Please refresh the page.";
+
             }
         }
 
+        // PDF UPLOAD
+
         form.addEventListener("submit", async function(event) {
+
             event.preventDefault();
 
-            if (!authenticated) return;
+            if (!authenticated) {
+
+                message.textContent =
+                    "Administrator session is not verified.";
+
+                return;
+            }
 
             const file = fileInput.files[0];
 
             if (!file) {
-                message.textContent = "Please select a PDF.";
+
+                message.textContent =
+                    "Please select a PDF.";
+
                 return;
             }
 
@@ -356,21 +388,31 @@
                 file.type !== "application/pdf" &&
                 !file.name.toLowerCase().endsWith(".pdf")
             ) {
-                message.textContent = "Only PDF files are allowed.";
+
+                message.textContent =
+                    "Only PDF files are allowed.";
+
                 return;
             }
 
             if (file.size > 20 * 1024 * 1024) {
-                message.textContent = "PDF must not exceed 20 MB.";
+
+                message.textContent =
+                    "PDF must not exceed 20 MB.";
+
                 return;
             }
 
             button.disabled = true;
+
             progress.style.display = "block";
             progress.value = 0;
-            message.textContent = "Preparing secure upload...";
+
+            message.textContent =
+                "Preparing secure upload...";
 
             try {
+
                 const safeName = file.name.replace(
                     /[^a-zA-Z0-9._-]/g,
                     "_"
@@ -379,35 +421,60 @@
                 const pathname =
                     `exam-documents/${Date.now()}-${safeName}`;
 
+                /*
+                 * Load Vercel Blob Client only when uploading.
+                 * This prevents a Blob import error from blocking
+                 * the administrator session check.
+                 */
+
+                const { upload } = await import(
+                    "https://esm.sh/@vercel/blob@2.9.0/client"
+                );
+
                 const blob = await upload(pathname, file, {
+
                     access: "private",
+
                     handleUploadUrl: "/api/admin/upload",
 
                     onUploadProgress({ percentage }) {
+
                         progress.value = percentage;
+
                         message.textContent =
                             `Uploading PDF: ${Math.round(percentage)}%`;
+
                     }
+
                 });
 
                 message.textContent =
                     "PDF uploaded successfully: " + file.name;
 
                 fileInput.value = "";
+
                 progress.value = 100;
 
             } catch (error) {
+
                 console.error("PDF upload error:", error);
 
                 message.textContent =
                     "Upload failed: " +
                     (error.message || "Please try again.");
+
             } finally {
+
                 button.disabled = false;
+
             }
+
         });
 
+        // START SESSION CHECK
+
         checkAdminSession();
+
     </script>
 
 </body>
