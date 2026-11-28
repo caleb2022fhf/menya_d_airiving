@@ -128,8 +128,6 @@
             display: none;
         }
 
-        /* PDF upload styles */
-
         .upload-input {
             display: block;
             width: 100%;
@@ -166,6 +164,14 @@
             width: 100%;
             margin-top: 15px;
             accent-color: #00d4ff;
+        }
+
+        .success-message {
+            color: #00e6a0 !important;
+        }
+
+        .error-message {
+            color: #ff7373 !important;
         }
 
         @media (max-width: 600px) {
@@ -290,8 +296,8 @@
                 <h2>PDF Question Bank</h2>
 
                 <p>
-                    Uploaded documents will be processed so that
-                    questions can be extracted and reviewed.
+                    Gemini AI will extract questions from uploaded PDFs.
+                    All extracted questions will wait for Admin review.
                 </p>
 
                 <span class="status">Admin session verified</span>
@@ -321,6 +327,11 @@
         const progress = document.getElementById("uploadProgress");
 
         let authenticated = false;
+
+        function showMessage(text, type = "") {
+            message.textContent = text;
+            message.className = type;
+        }
 
         // CHECK ADMIN SESSION
 
@@ -360,27 +371,27 @@
             }
         }
 
-        // PDF UPLOAD
+        // PDF UPLOAD AND GEMINI PROCESSING
 
         form.addEventListener("submit", async function(event) {
 
             event.preventDefault();
 
             if (!authenticated) {
-
-                message.textContent =
-                    "Administrator session is not verified.";
-
+                showMessage(
+                    "Administrator session is not verified.",
+                    "error-message"
+                );
                 return;
             }
 
             const file = fileInput.files[0];
 
             if (!file) {
-
-                message.textContent =
-                    "Please select a PDF.";
-
+                showMessage(
+                    "Please select a PDF.",
+                    "error-message"
+                );
                 return;
             }
 
@@ -388,30 +399,34 @@
                 file.type !== "application/pdf" &&
                 !file.name.toLowerCase().endsWith(".pdf")
             ) {
-
-                message.textContent =
-                    "Only PDF files are allowed.";
-
+                showMessage(
+                    "Only PDF files are allowed.",
+                    "error-message"
+                );
                 return;
             }
 
             if (file.size > 20 * 1024 * 1024) {
-
-                message.textContent =
-                    "PDF must not exceed 20 MB.";
-
+                showMessage(
+                    "PDF must not exceed 20 MB.",
+                    "error-message"
+                );
                 return;
             }
 
             button.disabled = true;
-
             progress.style.display = "block";
             progress.value = 0;
 
-            message.textContent =
-                "Preparing secure upload...";
-
             try {
+
+                // STEP 1: LOAD BLOB CLIENT
+
+                showMessage("Preparing secure PDF upload...");
+
+                const { upload } = await import(
+                    "https://esm.sh/@vercel/blob@2.9.0/client"
+                );
 
                 const safeName = file.name.replace(
                     /[^a-zA-Z0-9._-]/g,
@@ -421,15 +436,7 @@
                 const pathname =
                     `exam-documents/${Date.now()}-${safeName}`;
 
-                /*
-                 * Load Vercel Blob Client only when uploading.
-                 * This prevents a Blob import error from blocking
-                 * the administrator session check.
-                 */
-
-                const { upload } = await import(
-                    "https://esm.sh/@vercel/blob@2.9.0/client"
-                );
+                // STEP 2: UPLOAD PDF TO VERCEL BLOB
 
                 const blob = await upload(pathname, file, {
 
@@ -441,27 +448,66 @@
 
                         progress.value = percentage;
 
-                        message.textContent =
-                            `Uploading PDF: ${Math.round(percentage)}%`;
+                        showMessage(
+                            `Uploading PDF: ${Math.round(percentage)}%`
+                        );
 
                     }
 
                 });
 
-                message.textContent =
-                    "PDF uploaded successfully: " + file.name;
+                // STEP 3: SEND PDF URL TO GEMINI PROCESSING API
 
-                fileInput.value = "";
+                showMessage(
+                    "PDF uploaded successfully. Gemini AI is now reading your document..."
+                );
 
                 progress.value = 100;
 
+                const response = await fetch(
+                    "/api/admin/process-pdf",
+                    {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            blobUrl: blob.url
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+
+                    throw new Error(
+                        result.message || "AI processing failed."
+                    );
+
+                }
+
+                // STEP 4: DISPLAY EXTRACTION RESULT
+
+                showMessage(
+                    `Success! Gemini extracted ${result.extractedQuestions} questions. All questions are waiting for Admin review.`,
+                    "success-message"
+                );
+
+                fileInput.value = "";
+
             } catch (error) {
 
-                console.error("PDF upload error:", error);
+                console.error(
+                    "PDF upload or processing error:",
+                    error
+                );
 
-                message.textContent =
-                    "Upload failed: " +
-                    (error.message || "Please try again.");
+                showMessage(
+                    "Error: " + (error.message || "Please try again."),
+                    "error-message"
+                );
 
             } finally {
 
@@ -471,7 +517,7 @@
 
         });
 
-        // START SESSION CHECK
+        // START ADMIN SESSION CHECK
 
         checkAdminSession();
 
